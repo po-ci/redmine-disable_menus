@@ -1,0 +1,11 @@
+<p>Gracias por contactarse con el área de Atención de Consultas de Renaper.
+</p>
+<p>
+  Hemos recibido su solicitud, la misma será atendida a la brevedad y nos comunicaremos por este medio.
+</p>
+
+<p>Este mensaje es una respuesta automática para informarle que su solicitud ingresó correctamente, por lo que no necesita responderlo o enviarla nuevamente.</p>
+
+<%= l(:text_issue_added, :id => @issue.id, :author => h(@issue.author)).html_safe %>
+<hr />
+<%= render :partial => 'issue', :formats => [:html], :locals => { :issue => @issue, :user => @user, :issue_url => @issue_url } %>
