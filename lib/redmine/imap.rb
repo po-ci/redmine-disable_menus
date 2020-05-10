@@ -30,55 +30,54 @@ module Redmine
         starttls = !imap_options[:starttls].nil?
         folder = imap_options[:folder] || 'INBOX'
 
-        logger.info "MailHandler: Variables host: #{host} port: #{port} ssl: #{ssl} time: #{Time.now.getutc} "
 
         begin
+          logger.info "MailHandler: Variables host: #{host} port: #{port} ssl: #{ssl} time: #{Time.now.getutc} "
           imap = Net::IMAP.new(host, port, ssl)
+
+          if starttls
+            imap.starttls
+          end
+
+          logger.info "MailHandler: Login with #{imap_options[:username]} time: #{Time.now.getutc} "
+          imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
+          logger.info "MailHandler: Login DONE! time: #{Time.now.getutc} "
+
+          imap.select(folder)
+
+          logger.info "MailHandler: Select Folder DONE! time: #{Time.now.getutc} "
+
+          imap.uid_search(['NOT', 'SEEN']).each do |uid|
+            logger.info "MailHandler: Searching message #{uid} time: #{Time.now.getutc} "
+            msg = imap.uid_fetch(uid,'RFC822')[0].attr['BODY[]']
+            logger.info "MailHandler: Receiving message #{uid} time: #{Time.now.getutc}"
+            if MailHandler.safe_receive(msg, options)
+              logger.info "MailHandler: successfully message #{uid} time: #{Time.now.getutc}"
+              logger.debug "Message #{uid} successfully received" if logger && logger.debug?
+              if imap_options[:move_on_success]
+                logger.info "MailHandler: move on success message #{uid} time: #{Time.now.getutc}"
+                imap.uid_copy(uid, imap_options[:move_on_success])
+              end
+              imap.uid_store(uid, "+FLAGS", [:Seen])
+              logger.info "MailHandler: Seen and deleted message #{uid} time: #{Time.now.getutc}"
+            else
+              logger.debug "Message #{uid} can not be processed" if logger && logger.debug?
+              imap.uid_store(uid, "+FLAGS", [:Seen])
+              if imap_options[:move_on_failure]
+                imap.uid_copy(uid, imap_options[:move_on_failure])
+                imap.uid_store(uid, "+FLAGS", [:Deleted])
+              end
+            end
+          end
+          imap.expunge
+          imap.logout
+          imap.disconnect
         rescue Exception => ex
           logger.error "ERROR on IMAP.new"
           logger.error ex
         ensure
           logger.info "Ensure IMAP.new"
         end
-
-
-        if starttls
-          imap.starttls
-        end
-
-        logger.info "MailHandler: Login with #{imap_options[:username]} time: #{Time.now.getutc} "
-        imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
-        logger.info "MailHandler: Login DONE! time: #{Time.now.getutc} "
-
-        imap.select(folder)
-
-        logger.info "MailHandler: Select Folder DONE! time: #{Time.now.getutc} "
-
-        imap.uid_search(['NOT', 'SEEN']).each do |uid|
-          logger.info "MailHandler: Searching message #{uid} time: #{Time.now.getutc} "
-          msg = imap.uid_fetch(uid,'RFC822')[0].attr['BODY[]']
-          logger.info "MailHandler: Receiving message #{uid} time: #{Time.now.getutc}"
-          if MailHandler.safe_receive(msg, options)
-            logger.info "MailHandler: successfully message #{uid} time: #{Time.now.getutc}"
-            logger.debug "Message #{uid} successfully received" if logger && logger.debug?
-            if imap_options[:move_on_success]
-              logger.info "MailHandler: move on success message #{uid} time: #{Time.now.getutc}"
-              imap.uid_copy(uid, imap_options[:move_on_success])
-            end
-            imap.uid_store(uid, "+FLAGS", [:Seen])
-            logger.info "MailHandler: Seen and deleted message #{uid} time: #{Time.now.getutc}"
-          else
-            logger.debug "Message #{uid} can not be processed" if logger && logger.debug?
-            imap.uid_store(uid, "+FLAGS", [:Seen])
-            if imap_options[:move_on_failure]
-              imap.uid_copy(uid, imap_options[:move_on_failure])
-              imap.uid_store(uid, "+FLAGS", [:Deleted])
-            end
-          end
-        end
-        imap.expunge
-        imap.logout
-        imap.disconnect
       end
 
       def check_pair(imap_options={}, options={})
