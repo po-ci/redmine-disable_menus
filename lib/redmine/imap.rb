@@ -74,8 +74,10 @@ module Redmine
         if starttls
           imap.starttls
         end
+        logger.info "MailHandler: Login pair time: #{Time.now.getutc} "
         imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
         imap.select(folder)
+        logger.info "MailHandler: NotSeen Search pair time: #{Time.now.getutc} "
         imap.uid_search(['NOT', 'SEEN']).each do |uid|
           remainder = uid % 2
           logger.info "MailHandler: Reading UID #{uid} Remainder #{remainder}  time: #{Time.now.getutc} "
@@ -120,8 +122,10 @@ module Redmine
         if starttls
           imap.starttls
         end
+        logger.info "MailHandler: Login odd time: #{Time.now.getutc} "
         imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
         imap.select(folder)
+        logger.info "MailHandler: NotSeen Search odd time: #{Time.now.getutc} "
         imap.uid_search(['NOT', 'SEEN']).each do |uid|
           remainder = uid % 2
           logger.info "MailHandler: Reading UID #{uid} Remainder #{remainder}  time: #{Time.now.getutc} "
