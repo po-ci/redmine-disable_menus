@@ -215,7 +215,7 @@ class MailHandler < ActionMailer::Base
     add_watchers(issue)
     issue.save!
     add_attachments(issue)
-    logger&.info "MailHandler: issue ##{issue.id} created by #{user}"
+    logger&.info "MailHandler: issue ##{issue.id} created by #{user} time: #{Time.now.getutc}"
     issue
   end
 
@@ -252,7 +252,7 @@ class MailHandler < ActionMailer::Base
     add_watchers(issue)
     issue.save!
     add_attachments(issue)
-    logger&.info "MailHandler: issue ##{issue.id} updated by #{user}"
+    logger&.info "MailHandler: issue ##{issue.id} updated by #{user} time: #{Time.now.getutc}"
     journal
   end
 
