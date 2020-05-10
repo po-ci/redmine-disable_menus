@@ -62,6 +62,94 @@ module Redmine
         imap.disconnect
       end
 
+      def check_pair(imap_options={}, options={})
+        host = imap_options[:host] || '127.0.0.1'
+        port = imap_options[:port] || '143'
+        ssl = !imap_options[:ssl].nil?
+        starttls = !imap_options[:starttls].nil?
+        folder = imap_options[:folder] || 'INBOX'
+
+        imap = Net::IMAP.new(host, port, ssl)
+        if starttls
+          imap.starttls
+        end
+        imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
+        imap.select(folder)
+        imap.uid_search(['NOT', 'SEEN']).each do |uid|
+          remainder = uid % 2
+
+          if remainder == 0
+            logger.info "MailHandler: Searching message pair #{uid} time: #{Time.now.getutc} "
+            msg = imap.uid_fetch(uid,'RFC822')[0].attr['BODY[]']
+            logger.info "MailHandler: Receiving message #{uid} time: #{Time.now.getutc}"
+            if MailHandler.safe_receive(msg, options)
+              logger.info "MailHandler: successfully message #{uid} time: #{Time.now.getutc}"
+              logger.debug "Message #{uid} successfully received" if logger && logger.debug?
+              if imap_options[:move_on_success]
+                logger.info "MailHandler: move on success message #{uid} time: #{Time.now.getutc}"
+                imap.uid_copy(uid, imap_options[:move_on_success])
+              end
+              imap.uid_store(uid, "+FLAGS", [:Seen])
+              logger.info "MailHandler: Seen and deleted message #{uid} time: #{Time.now.getutc}"
+            else
+              logger.debug "Message #{uid} can not be processed" if logger && logger.debug?
+              imap.uid_store(uid, "+FLAGS", [:Seen])
+              if imap_options[:move_on_failure]
+                imap.uid_copy(uid, imap_options[:move_on_failure])
+                imap.uid_store(uid, "+FLAGS", [:Deleted])
+              end
+            end
+          end
+        end
+        imap.expunge
+        imap.logout
+        imap.disconnect
+      end
+
+      def check_odd(imap_options={}, options={})
+        host = imap_options[:host] || '127.0.0.1'
+        port = imap_options[:port] || '143'
+        ssl = !imap_options[:ssl].nil?
+        starttls = !imap_options[:starttls].nil?
+        folder = imap_options[:folder] || 'INBOX'
+
+        imap = Net::IMAP.new(host, port, ssl)
+        if starttls
+          imap.starttls
+        end
+        imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
+        imap.select(folder)
+        imap.uid_search(['NOT', 'SEEN']).each do |uid|
+          remainder = uid % 2
+
+          if remainder != 0
+            logger.info "MailHandler: Searching message odd #{uid} time: #{Time.now.getutc} "
+            msg = imap.uid_fetch(uid,'RFC822')[0].attr['BODY[]']
+            logger.info "MailHandler: Receiving message #{uid} time: #{Time.now.getutc}"
+            if MailHandler.safe_receive(msg, options)
+              logger.info "MailHandler: successfully message #{uid} time: #{Time.now.getutc}"
+              logger.debug "Message #{uid} successfully received" if logger && logger.debug?
+              if imap_options[:move_on_success]
+                logger.info "MailHandler: move on success message #{uid} time: #{Time.now.getutc}"
+                imap.uid_copy(uid, imap_options[:move_on_success])
+              end
+              imap.uid_store(uid, "+FLAGS", [:Seen])
+              logger.info "MailHandler: Seen and deleted message #{uid} time: #{Time.now.getutc}"
+            else
+              logger.debug "Message #{uid} can not be processed" if logger && logger.debug?
+              imap.uid_store(uid, "+FLAGS", [:Seen])
+              if imap_options[:move_on_failure]
+                imap.uid_copy(uid, imap_options[:move_on_failure])
+                imap.uid_store(uid, "+FLAGS", [:Deleted])
+              end
+            end
+          end
+        end
+        imap.expunge
+        imap.logout
+        imap.disconnect
+      end
+
       private
 
       def logger
