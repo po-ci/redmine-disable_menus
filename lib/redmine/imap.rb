@@ -77,7 +77,7 @@ module Redmine
         imap.select(folder)
         imap.uid_search(['NOT', 'SEEN']).each do |uid|
           remainder = uid % 2
-
+          logger.info "MailHandler: Reading UID #{uid} Remainder #{remainder}  time: #{Time.now.getutc} "
           if remainder == 0
             logger.info "MailHandler: Searching message pair #{uid} time: #{Time.now.getutc} "
             msg = imap.uid_fetch(uid,'RFC822')[0].attr['BODY[]']
@@ -121,7 +121,7 @@ module Redmine
         imap.select(folder)
         imap.uid_search(['NOT', 'SEEN']).each do |uid|
           remainder = uid % 2
-
+          logger.info "MailHandler: Reading UID #{uid} Remainder #{remainder}  time: #{Time.now.getutc} "
           if remainder != 0
             logger.info "MailHandler: Searching message odd #{uid} time: #{Time.now.getutc} "
             msg = imap.uid_fetch(uid,'RFC822')[0].attr['BODY[]']
