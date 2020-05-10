@@ -63,6 +63,7 @@ module Redmine
       end
 
       def check_pair(imap_options={}, options={})
+        logger.info "MailHandler: Initiating pair time: #{Time.now.getutc} "
         host = imap_options[:host] || '127.0.0.1'
         port = imap_options[:port] || '143'
         ssl = !imap_options[:ssl].nil?
@@ -107,6 +108,8 @@ module Redmine
       end
 
       def check_odd(imap_options={}, options={})
+        logger.info "MailHandler: Initiating odd time: #{Time.now.getutc} "
+
         host = imap_options[:host] || '127.0.0.1'
         port = imap_options[:port] || '143'
         ssl = !imap_options[:ssl].nil?
