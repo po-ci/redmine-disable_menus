@@ -32,10 +32,20 @@ module Redmine
 
         logger.info "MailHandler: Variables host: #{host} port: #{port} ssl: #{ssl} time: #{Time.now.getutc} "
 
-        imap = Net::IMAP.new(host, port, ssl)
+        begin
+          imap = Net::IMAP.new(host, port, ssl)
+        rescue Exception => ex
+          logger.error "ERROR on IMAP.new"
+          logger.error ex
+        ensure
+          logger.info "Ensure IMAP.new"
+        end
+
+
         if starttls
           imap.starttls
         end
+
         logger.info "MailHandler: Login with #{imap_options[:username]} time: #{Time.now.getutc} "
         imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
         logger.info "MailHandler: Login DONE! time: #{Time.now.getutc} "
